@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>小红书市场调研双助手</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">小红书市场调研</p>
+          <h1>市场调研双助手</h1>
+          <p class="sub">先生成该搜什么，再分析复制回来的页面内容。主题负责过滤无关帖，搜索词负责发现痛点和机会。</p>
+        </div>
+        <div class="hero-actions">
+          <button class="secondary-button" id="loadSampleButton" type="button">试用示例</button>
+          <button class="ghost-button" id="clearAllButton" type="button">清空本页数据</button>
+        </div>
+      </header>
+
+      <section class="assistant-grid">
+        <section class="panel strategy-panel">
+          <div class="panel-head">
+            <div>
+              <p class="assistant-label">助手 1</p>
+              <h2>关键词策略助手</h2>
+            </div>
+            <span>先决定搜什么</span>
+          </div>
+
+          <label>
+            <span>调研主题 / 品类</span>
+            <input id="topicInput" placeholder="例如：防晒衣、洗面奶、露营灯" autocomplete="off" />
+          </label>
+
+          <label>
+            <span>补充词，可选</span>
+            <textarea id="seedInput" rows="5" placeholder="每行一个，比如&#10;好烦&#10;显黑&#10;学生党&#10;怎么选"></textarea>
+          </label>
+
+          <div class="button-row">
+            <button class="primary-button" id="suggestButton" type="button">生成搜索词组</button>
+            <button class="secondary-button" id="copyQueriesButton" type="button">复制词组</button>
+            <button class="secondary-button" id="openSearchButton" type="button">打开前 6 个搜索</button>
+          </div>
+
+          <p class="mobile-hint">手机上建议点下面的词条逐个打开搜索页，复制结果后再回到本页生成报告。</p>
+
+          <div class="query-box" id="queryBox">
+            <div class="empty">输入主题后生成搜索词组</div>
+          </div>
+        </section>
+
+        <section class="panel analysis-panel">
+          <div class="panel-head">
+            <div>
+              <p class="assistant-label">助手 2</p>
+              <h2>调研分析助手</h2>
+            </div>
+            <span>再判断说明什么</span>
+          </div>
+
+          <label>
+            <span>复制的小红书页面文字</span>
+            <textarea id="pageTextInput" rows="15" placeholder="可以把多个搜索页的可见文字复制到一起。工具会先按调研主题过滤无关内容，再统计相关帖子、相关词和出现频率。"></textarea>
+          </label>
+
+          <div class="button-row">
+            <button class="primary-button" id="generateButton" type="button">生成调研报告</button>
+            <button class="secondary-button" id="copyReportButton" type="button">复制报告</button>
+            <button class="secondary-button" id="exportCsvButton" type="button">导出 CSV</button>
+          </div>
+        </section>
+      </section>
+
+      <section class="metric-grid">
+        <div class="metric-card">
+          <span>相关词条</span>
+          <strong id="metricTerms">0</strong>
+        </div>
+        <div class="metric-card accent-red">
+          <span>相关帖子</span>
+          <strong id="metricPosts">0</strong>
+        </div>
+        <div class="metric-card accent-blue">
+          <span>过滤无关</span>
+          <strong id="metricFiltered">0</strong>
+        </div>
+        <div class="metric-card accent-olive">
+          <span>主题出现</span>
+          <strong id="metricMentions">0</strong>
+        </div>
+      </section>
+
+      <section class="report-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>相关词频</h2>
+            <span>只统计相关内容</span>
+          </div>
+          <div class="bar-list" id="termBars"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>相关帖子</h2>
+            <span id="postCountLabel">0 条</span>
+          </div>
+          <div class="post-list" id="postList"></div>
+        </section>
+
+        <section class="panel wide-panel">
+          <div class="panel-head">
+            <h2>报告摘要</h2>
+            <span>可复制</span>
+          </div>
+          <article class="summary" id="summaryText">先输入调研主题，生成搜索词组；然后把小红书搜索结果文字粘贴回来，点击生成报告。</article>
+        </section>
+
+        <aside class="panel wide-panel">
+          <div class="panel-head">
+            <h2>本页保存</h2>
+            <span id="historyCount">0 次</span>
+          </div>
+          <div class="history-list" id="historyList"></div>
+        </aside>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -19,24 +19,49 @@ const sampleText = `好烦，今天上班又迟到了
 点赞 980 收藏 1320 评论 74
 用户更关心一整套方案：防晒衣、防晒霜、遮阳帽和补涂。`;
 
-const defaultGroups = [
-  {
-    name: "痛点 / 情绪",
-    terms: ["好烦", "踩雷", "后悔", "劝退", "闷热", "不舒服", "不透气", "显黑", "太贵", "不好用"]
+const researchModes = {
+  product: {
+    label: "产品机会",
+    groups: [
+      { name: "痛点 / 情绪", terms: ["好烦", "踩雷", "后悔", "劝退", "闷热", "不舒服", "不透气", "显黑", "太贵", "不好用"] },
+      { name: "购买决策", terms: ["怎么选", "测评", "对比", "真实评价", "性价比", "平替", "值得买吗", "推荐"] },
+      { name: "人群", terms: ["学生党", "小个子", "敏感肌", "宝妈", "打工人", "新手", "男生", "女生"] },
+      { name: "场景", terms: ["通勤", "夏天", "旅行", "海边", "户外", "骑车", "军训", "露营"] }
+    ]
   },
-  {
-    name: "人群",
-    terms: ["学生党", "小个子", "敏感肌", "宝妈", "打工人", "新手", "男生", "女生"]
+  pain: {
+    label: "用户痛点",
+    groups: [
+      { name: "抱怨表达", terms: ["好烦", "受不了", "劝退", "踩雷", "后悔", "吐槽", "避雷", "不推荐"] },
+      { name: "问题描述", terms: ["闷热", "不舒服", "不透气", "显黑", "起球", "过敏", "不好洗", "不耐用"] },
+      { name: "评论问题", terms: ["怎么办", "怎么解决", "有没有同款", "求推荐", "求平替", "求避雷"] }
+    ]
   },
-  {
-    name: "场景",
-    terms: ["通勤", "夏天", "旅行", "海边", "户外", "骑车", "军训", "露营"]
+  content: {
+    label: "内容选题",
+    groups: [
+      { name: "内容形式", terms: ["合集", "清单", "测评", "对比", "教程", "攻略", "避雷", "开箱"] },
+      { name: "标题方向", terms: ["推荐", "真实评价", "怎么选", "新手", "必看", "平价", "高性价比"] },
+      { name: "场景选题", terms: ["通勤", "旅行", "夏天", "学生党", "小个子", "懒人", "日常"] }
+    ]
   },
-  {
-    name: "购买决策",
-    terms: ["怎么选", "测评", "推荐", "对比", "避雷", "真实评价", "性价比", "平替"]
+  competitor: {
+    label: "竞品分析",
+    groups: [
+      { name: "竞品对比", terms: ["对比", "测评", "平替", "同款", "替代", "哪家好", "值得买吗"] },
+      { name: "品牌评价", terms: ["真实评价", "踩雷", "推荐", "劝退", "售后", "质量", "价格"] },
+      { name: "购买决策", terms: ["性价比", "便宜", "贵", "预算", "百元", "大牌", "平价"] }
+    ]
   }
-];
+};
+
+const insightDictionaries = {
+  pain: ["好烦", "踩雷", "后悔", "劝退", "闷热", "不舒服", "不透气", "显黑", "太贵", "不好用", "过敏", "起球", "避雷"],
+  audience: ["学生党", "小个子", "敏感肌", "宝妈", "打工人", "新手", "男生", "女生", "懒人"],
+  scene: ["通勤", "夏天", "旅行", "海边", "户外", "骑车", "军训", "露营", "日常"],
+  decision: ["怎么选", "测评", "对比", "推荐", "真实评价", "性价比", "平替", "值得买吗", "预算", "百元"],
+  competitor: ["同款", "平替", "替代", "大牌", "哪家好", "质量", "售后", "价格"]
+};
 
 const stopWords = new Set([
   "小红书",
@@ -124,8 +149,9 @@ function makeQuery(topic, term) {
   return `${topic} ${term}`;
 }
 
-function generateSearchPlan(topic, customTerms) {
-  const groups = defaultGroups.map((group) => ({
+function generateSearchPlan(topic, customTerms, mode = "product") {
+  const config = researchModes[mode] || researchModes.product;
+  const groups = config.groups.map((group) => ({
     name: group.name,
     queries: group.terms.map((term) => makeQuery(topic, term))
   }));
@@ -140,6 +166,8 @@ function generateSearchPlan(topic, customTerms) {
   const seen = new Set();
   return {
     topic,
+    mode,
+    modeLabel: config.label,
     createdAt: new Date().toISOString(),
     groups: groups.map((group) => ({
       ...group,
@@ -287,10 +315,64 @@ function extractTerms(text, topic, queries) {
     .map(([term, count]) => ({ term, count }));
 }
 
+function countDictionary(text, words) {
+  return words
+    .map((word) => ({ term: word, count: countOccurrences(text, word) }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+function topLabel(items, emptyText = "暂不明显") {
+  return items.length ? items.slice(0, 4).map((item) => `${item.term}(${item.count})`).join("、") : emptyText;
+}
+
+function buildInsights(topic, mode, relevantText, terms, posts, filteredCount) {
+  const pain = countDictionary(relevantText, insightDictionaries.pain);
+  const audience = countDictionary(relevantText, insightDictionaries.audience);
+  const scene = countDictionary(relevantText, insightDictionaries.scene);
+  const decision = countDictionary(relevantText, insightDictionaries.decision);
+  const competitor = countDictionary(relevantText, insightDictionaries.competitor);
+  const topTerms = terms.slice(0, 5).map((item) => item.term).join("、") || "暂无";
+  const modeLabel = researchModes[mode]?.label || "产品机会";
+
+  const opportunityText =
+    mode === "content"
+      ? `优先围绕 ${topLabel(scene, "高频场景")} 做选题，标题可结合 ${topLabel(decision, "测评/清单/避雷")}。`
+      : mode === "competitor"
+        ? `优先查看 ${topLabel(competitor, "竞品/价格词")} 相关内容，补充品牌名后再跑一轮。`
+        : mode === "pain"
+          ? `优先验证 ${topLabel(pain, "痛点词")} 是否集中在具体人群或场景。`
+          : `优先关注 ${topLabel(pain, "痛点")} + ${topLabel(audience, "人群")} + ${topLabel(scene, "场景")} 的交叉机会。`;
+
+  return [
+    {
+      title: "调研口径",
+      tone: "info",
+      body: `${modeLabel}：围绕“${topic}”过滤内容，本轮过滤无关 ${filteredCount} 条。`
+    },
+    {
+      title: "核心痛点",
+      tone: pain.length ? "warning" : "muted",
+      body: topLabel(pain)
+    },
+    {
+      title: "人群 / 场景",
+      tone: "info",
+      body: `人群：${topLabel(audience)}；场景：${topLabel(scene)}。`
+    },
+    {
+      title: "下一步建议",
+      tone: "muted",
+      body: `${opportunityText} 高频词：${topTerms}。`
+    }
+  ];
+}
+
 function analyze(topic, rawText, plan) {
   const text = rawText.trim();
   const blocks = parseBlocks(text, topic);
   const relevantBlocks = blocks.filter((block) => block.relevant);
+  const filteredBlocks = blocks.filter((block) => !block.relevant);
   const relevantText = relevantBlocks.map((block) => block.text).join("\n\n");
   const queries = allQueries(plan);
 
@@ -315,6 +397,7 @@ function analyze(topic, rawText, plan) {
     .slice(0, 40);
 
   const terms = extractTerms(relevantText, topic, queries);
+  const insights = buildInsights(topic, plan?.mode || "product", relevantText, terms, posts, filteredBlocks.length);
 
   return {
     id: `report_${Date.now().toString(36)}`,
@@ -322,12 +405,16 @@ function analyze(topic, rawText, plan) {
     createdAt: new Date().toISOString(),
     rawText: text,
     plan,
+    mode: plan?.mode || "product",
+    modeLabel: plan?.modeLabel || researchModes.product.label,
     lineCount: text.split(/\r?\n/).map(cleanLine).filter(Boolean).length,
     blockCount: blocks.length,
-    filteredCount: blocks.length - relevantBlocks.length,
+    filteredCount: filteredBlocks.length,
+    filteredBlocks: filteredBlocks.slice(0, 8).map((block) => ({ title: block.title, text: block.text.slice(0, 180) })),
     topicMentions: topicAnchors(topic).reduce((sum, anchor) => sum + countOccurrences(relevantText, anchor), 0),
     relatedTermCount: terms.length,
     relatedPostCount: posts.length,
+    insights,
     terms,
     posts
   };
@@ -337,9 +424,11 @@ function buildSummary(report) {
   const queryCount = allQueries(report.plan).length;
   const topTerms = report.terms.slice(0, 12).map((item) => `${item.term}(${item.count})`).join("、") || "暂无";
   const topPosts = report.posts.slice(0, 6).map((post, index) => `${index + 1}. ${post.title}`).join("\n") || "暂无";
+  const insightText = (report.insights || []).map((item) => `- ${item.title}：${item.body}`).join("\n") || "- 暂无结论";
 
   return [
     `调研主题：${report.topic}`,
+    `调研类型：${report.modeLabel || "产品机会"}`,
     `生成时间：${new Date(report.createdAt).toLocaleString("zh-CN")}`,
     "",
     `搜索词组：${queryCount} 个`,
@@ -350,6 +439,9 @@ function buildSummary(report) {
     `主题出现：${report.topicMentions} 次`,
     "",
     `高频相关词：${topTerms}`,
+    "",
+    "调研结论：",
+    insightText,
     "",
     "相关帖子：",
     topPosts,
@@ -366,8 +458,30 @@ function renderReport(report) {
   document.getElementById("metricMentions").textContent = report.topicMentions;
   document.getElementById("postCountLabel").textContent = `${report.relatedPostCount} 条`;
   document.getElementById("summaryText").textContent = buildSummary(report);
+  document.getElementById("filteredCountLabel").textContent = `${report.filteredCount} 条`;
+  renderInsights(report.insights || []);
   renderTerms(report.terms);
   renderPosts(report.posts);
+  renderFiltered(report.filteredBlocks || []);
+}
+
+function renderInsights(insights) {
+  const list = document.getElementById("insightList");
+  list.innerHTML = "";
+  if (!insights.length) {
+    list.innerHTML = `<div class="empty">生成报告后显示结论</div>`;
+    return;
+  }
+
+  insights.forEach((insight) => {
+    const item = document.createElement("article");
+    item.className = `insight-item ${insight.tone || ""}`.trim();
+    item.innerHTML = `
+      <strong>${escapeHtml(insight.title)}</strong>
+      <p>${escapeHtml(insight.body)}</p>
+    `;
+    list.appendChild(item);
+  });
 }
 
 function renderTerms(terms) {
@@ -406,6 +520,25 @@ function renderPosts(posts) {
       <strong>${escapeHtml(post.title)}</strong>
       <div class="meta">主题命中 ${post.topicHits} 次 · 赞 ${post.likes} · 藏 ${post.collects} · 评 ${post.comments}</div>
       <div class="tag-row">${post.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function renderFiltered(blocks) {
+  const list = document.getElementById("filteredList");
+  list.innerHTML = "";
+  if (!blocks.length) {
+    list.innerHTML = `<div class="empty">暂无被过滤内容</div>`;
+    return;
+  }
+
+  blocks.slice(0, 6).forEach((block) => {
+    const item = document.createElement("article");
+    item.className = "filtered-item";
+    item.innerHTML = `
+      <strong>${escapeHtml(block.title)}</strong>
+      <p>${escapeHtml(block.text)}</p>
     `;
     list.appendChild(item);
   });
@@ -491,11 +624,12 @@ function escapeHtml(value) {
 function setupEvents() {
   document.getElementById("suggestButton").addEventListener("click", () => {
     const topic = document.getElementById("topicInput").value.trim();
+    const mode = document.getElementById("researchType").value;
     if (!topic) {
       toast("先填调研主题");
       return;
     }
-    currentPlan = generateSearchPlan(topic, splitLines(document.getElementById("seedInput").value));
+    currentPlan = generateSearchPlan(topic, splitLines(document.getElementById("seedInput").value), mode);
     renderQueryBox(currentPlan);
     toast("搜索词组已生成");
   });
@@ -510,13 +644,14 @@ function setupEvents() {
   });
 
   document.getElementById("openSearchButton").addEventListener("click", () => {
-    if (!currentPlan) {
-      const topic = document.getElementById("topicInput").value.trim();
-      if (!topic) {
-        toast("先填调研主题");
-        return;
-      }
-      currentPlan = generateSearchPlan(topic, splitLines(document.getElementById("seedInput").value));
+    const topic = document.getElementById("topicInput").value.trim();
+    const mode = document.getElementById("researchType").value;
+    if (!topic) {
+      toast("先填调研主题");
+      return;
+    }
+    if (!currentPlan || currentPlan.topic !== topic || currentPlan.mode !== mode) {
+      currentPlan = generateSearchPlan(topic, splitLines(document.getElementById("seedInput").value), mode);
       renderQueryBox(currentPlan);
     }
     allQueries().slice(0, 6).forEach((query) => window.open(xhsSearchUrl(query), "_blank", "noopener"));
@@ -525,6 +660,7 @@ function setupEvents() {
 
   document.getElementById("generateButton").addEventListener("click", () => {
     const topic = document.getElementById("topicInput").value.trim();
+    const mode = document.getElementById("researchType").value;
     const text = document.getElementById("pageTextInput").value.trim();
     if (!topic) {
       toast("先填调研主题");
@@ -534,8 +670,8 @@ function setupEvents() {
       toast("先粘贴小红书页面文字");
       return;
     }
-    if (!currentPlan || currentPlan.topic !== topic) {
-      currentPlan = generateSearchPlan(topic, splitLines(document.getElementById("seedInput").value));
+    if (!currentPlan || currentPlan.topic !== topic || currentPlan.mode !== mode) {
+      currentPlan = generateSearchPlan(topic, splitLines(document.getElementById("seedInput").value), mode);
       renderQueryBox(currentPlan);
     }
     const report = analyze(topic, text, currentPlan);
@@ -557,9 +693,10 @@ function setupEvents() {
 
   document.getElementById("loadSampleButton").addEventListener("click", () => {
     document.getElementById("topicInput").value = "防晒衣";
+    document.getElementById("researchType").value = "product";
     document.getElementById("seedInput").value = "好烦\n闷热\n学生党\n怎么选";
     document.getElementById("pageTextInput").value = sampleText;
-    currentPlan = generateSearchPlan("防晒衣", splitLines(document.getElementById("seedInput").value));
+    currentPlan = generateSearchPlan("防晒衣", splitLines(document.getElementById("seedInput").value), "product");
     renderQueryBox(currentPlan);
     const report = analyze("防晒衣", sampleText, currentPlan);
     renderReport(report);
@@ -576,18 +713,23 @@ function setupEvents() {
     renderHistory();
     renderQueryBox(null);
     document.getElementById("topicInput").value = "";
+    document.getElementById("researchType").value = "product";
     document.getElementById("seedInput").value = "";
     document.getElementById("pageTextInput").value = "";
     renderReport({
       topic: "",
       createdAt: new Date().toISOString(),
       plan: null,
+      mode: "product",
+      modeLabel: researchModes.product.label,
       lineCount: 0,
       blockCount: 0,
       filteredCount: 0,
+      filteredBlocks: [],
       topicMentions: 0,
       relatedTermCount: 0,
       relatedPostCount: 0,
+      insights: [],
       terms: [],
       posts: []
     });
@@ -600,8 +742,9 @@ function setupEvents() {
     if (!id) return;
     const report = history.find((item) => item.id === id);
     if (!report) return;
-    currentPlan = report.plan || generateSearchPlan(report.topic, []);
+    currentPlan = report.plan || generateSearchPlan(report.topic, [], report.mode || "product");
     document.getElementById("topicInput").value = report.topic;
+    document.getElementById("researchType").value = report.mode || report.plan?.mode || "product";
     document.getElementById("seedInput").value = "";
     document.getElementById("pageTextInput").value = report.rawText || "";
     renderQueryBox(currentPlan);
@@ -612,3 +755,5 @@ function setupEvents() {
 
 setupEvents();
 renderHistory();
+renderInsights([]);
+renderFiltered([]);

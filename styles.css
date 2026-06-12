@@ -30,7 +30,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -139,7 +140,8 @@ label span {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -155,7 +157,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(22, 124, 116, 0.12);
 }
@@ -294,7 +297,9 @@ textarea:focus {
 
 .history-list,
 .post-list,
-.bar-list {
+.bar-list,
+.insight-list,
+.filtered-list {
   display: grid;
   gap: 10px;
 }
@@ -304,11 +309,46 @@ textarea:focus {
 }
 
 .history-item,
-.post-item {
+.post-item,
+.insight-item,
+.filtered-item {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   padding: 11px;
+}
+
+.insight-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.insight-item {
+  border-top: 4px solid var(--green);
+}
+
+.insight-item.warning {
+  border-top-color: var(--red);
+}
+
+.insight-item.info {
+  border-top-color: var(--blue);
+}
+
+.insight-item.muted {
+  border-top-color: var(--olive);
+}
+
+.insight-item strong {
+  display: block;
+  margin-bottom: 7px;
+}
+
+.insight-item p,
+.filtered-item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: 13px;
 }
 
 .history-item {
@@ -420,7 +460,8 @@ textarea:focus {
   .assistant-grid,
   .metric-grid,
   .report-grid,
-  .history-list {
+  .history-list,
+  .insight-list {
     grid-template-columns: 1fr;
   }
 

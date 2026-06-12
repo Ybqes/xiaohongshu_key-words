@@ -36,6 +36,16 @@
           </label>
 
           <label>
+            <span>调研类型</span>
+            <select id="researchType">
+              <option value="product">产品机会</option>
+              <option value="pain">用户痛点</option>
+              <option value="content">内容选题</option>
+              <option value="competitor">竞品分析</option>
+            </select>
+          </label>
+
+          <label>
             <span>补充词，可选</span>
             <textarea id="seedInput" rows="5" placeholder="每行一个，比如&#10;好烦&#10;显黑&#10;学生党&#10;怎么选"></textarea>
           </label>
@@ -95,6 +105,14 @@
       </section>
 
       <section class="report-grid">
+        <section class="panel wide-panel">
+          <div class="panel-head">
+            <h2>调研结论</h2>
+            <span>按规则自动归纳</span>
+          </div>
+          <div class="insight-list" id="insightList"></div>
+        </section>
+
         <section class="panel">
           <div class="panel-head">
             <h2>相关词频</h2>
@@ -109,6 +127,14 @@
             <span id="postCountLabel">0 条</span>
           </div>
           <div class="post-list" id="postList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>无关内容预览</h2>
+            <span id="filteredCountLabel">0 条</span>
+          </div>
+          <div class="filtered-list" id="filteredList"></div>
         </section>
 
         <section class="panel wide-panel">
